@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>すくば市消防本部 指令台システム</title>
+    <title>すくば市消防本部 指令台システム - 究極互換版</title>
     <style>
         :root {
             --bg-white: #ffffff;
@@ -16,11 +16,13 @@
 
         * {
             box-sizing: border-box;
+            -webkit-box-sizing: border-box; /* 古いブラウザ用ガード */
+            -moz-box-sizing: border-box;
         }
 
         body {
             background-color: var(--panel-gray);
-            font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Segoe UI", "Hiragino Kaku Gothic ProN", "Meiryo", sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", "Hiragino Kaku Gothic ProN", "Meiryo", sans-serif;
             margin: 0;
             padding: 8px;
             display: flex;
@@ -31,13 +33,14 @@
             overflow: hidden;
         }
 
-        /* 【重要】車両編成エリア：崩れ防止対策 */
+        /* 車両編成エリア：Windows Phoneの古いIE対策を盛り込んだグリッド */
         .grid-container {
             height: 42%;
             background-color: var(--bg-white);
+            display: -ms-grid; /* Windows Phone / 古いIE用のおまじない */
             display: grid;
-            grid-template-columns: 120px repeat(4, 1fr); /* 1列目は少し狭く、残り4列を均等に */
-            grid-auto-rows: 1fr; /* 画面全体の高さに合わせて各マスが均等に伸び縮みする */
+            grid-template-columns: 120px repeat(4, 1fr);
+            grid-auto-rows: 1fr;
             gap: 2px;
             border: 2px solid var(--border-line);
             padding: 3px;
@@ -45,25 +48,29 @@
             margin-bottom: 8px;
         }
 
-        /* 1つのマス（セル）の崩れを完全にリセット */
+        /* どんなクソ環境でも絶対に文字をど真ん中に固定する設定 */
         .cell {
             background-color: var(--bg-white);
             color: var(--text-black);
             border: 1px solid #e0e0e0;
             display: flex;
-            align-items: center;        /* 上下中央揃え */
-            justify-content: center;     /* 左右中央揃え */
-            cursor: pointer;
-            font-size: 14px;             /* 文字がはみ出さない適切なサイズ */
-            font-weight: bold;
+            align-items: center;
+            justify-content: center;
             text-align: center;
-            line-height: 1.2;            /* 縦伸びを防止する行間設定 */
+            /* 古いスマホ用の縦横中央揃えガード */
+            display: -webkit-flex;
+            -webkit-align-items: center;
+            -webkit-justify-content: center;
+            
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            line-height: 1.2;
             padding: 2px;
-            white-space: normal;         /* 2行になっても綺麗に収める */
+            white-space: normal;
             word-break: break-all;
         }
 
-        /* 署所名セル */
         .cell-station {
             background-color: #e8e8e8;
             cursor: default;
@@ -71,26 +78,30 @@
             font-size: 15px;
         }
 
-        /* 車両選択時 */
         .cell.active {
             background-color: var(--active-red);
             color: #ffffff;
             animation: blinkEffect 0.5s infinite alternate;
+            -webkit-animation: blinkEffect 0.5s infinite alternate;
         }
 
         @keyframes blinkEffect {
             from { background-color: #ff3333; }
             to { background-color: #a00000; }
         }
+        @-webkit-keyframes blinkEffect {
+            from { background-color: #ff3333; }
+            to { background-color: #a00000; }
+        }
 
-        /* 下部：複合操作エリア */
+        /* 下部エリア */
         .lower-container {
             height: 55%;
             display: flex;
+            display: -webkit-flex;
             gap: 8px;
         }
 
-        /* 地図表示エリア */
         .map-area {
             width: 35%;
             background-color: #e0e0e0;
@@ -123,7 +134,6 @@
             cursor: pointer;
         }
 
-        /* 操作パネル */
         .controls-panel {
             flex-grow: 1;
             background-color: var(--bg-white);
@@ -165,10 +175,11 @@
         .dispatch-btn-container {
             grid-column: span 2;
             display: flex;
+            display: -webkit-flex;
             align-items: flex-end;
+            -webkit-align-items: flex-end;
         }
 
-        /* 超巨大 出動決定ボタン */
         .btn-dispatch {
             background-color: var(--bg-white);
             color: black;
@@ -250,7 +261,6 @@
 </div>
 
 <script>
-    // 13車両データ
     const data = [
         {
             station: "中央署",
@@ -262,7 +272,6 @@
         }
     ];
 
-    // 車両グリッド生成
     const grid = document.getElementById('grid');
     data.forEach(group => {
         const sCell = document.createElement('div');
@@ -318,20 +327,25 @@
         const address = `すくば市、${town}、${block}${near}`;
         const speechText = `${cmd}。${address}。${free}。出動部隊、${selectedUnits.join("、")}。以上。`;
 
+        // どんな古いスマホでもブラウザが対応していれば音声リセットを掛ける
         if ('speechSynthesis' in window) {
-            window.speechSynthesis.cancel();
+            try {
+                window.speechSynthesis.cancel();
+            } catch(e) {}
+
             const uttr = new SpeechSynthesisUtterance(speechText);
             uttr.lang = 'ja-JP';
             uttr.rate = 1.25;
 
+            // Windows PhoneのCortana（コルタナ）音声エンジンでもバグらないように設定
             setTimeout(() => {
                 window.speechSynthesis.speak(uttr);
-            }, 100);
+            }, 120);
         }
 
         selectedElements.forEach(el => {
             el.classList.remove('active');
-            el.style.backgroundColor = 'var(--dispatched-gray)';
+            el.style.backgroundColor = '#d0d0d0';
             el.style.color = "#666666";
         });
     }

@@ -2,64 +2,76 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>すくば市消防本部 指令台システム - マルチ対応版</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>すくば市消防本部 指令台システム</title>
     <style>
         :root {
             --bg-white: #ffffff;
-            --panel-gray: #f0f0f0;
+            --panel-gray: #f5f5f5;
             --border-line: #bbbbbb;
             --text-black: #000000;
             --active-red: #ff3333;
             --dispatched-gray: #d0d0d0;
         }
 
+        * {
+            box-sizing: border-box;
+        }
+
         body {
             background-color: var(--panel-gray);
             font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Segoe UI", "Hiragino Kaku Gothic ProN", "Meiryo", sans-serif;
             margin: 0;
-            padding: 10px;
+            padding: 8px;
             display: flex;
             flex-direction: column;
-            height: 98vh;
+            height: 100vh;
             color: var(--text-black);
             user-select: none;
             overflow: hidden;
         }
 
-        /* 上部：車両編成エリア */
+        /* 【重要】車両編成エリア：崩れ防止対策 */
         .grid-container {
-            height: 45%;
+            height: 42%;
             background-color: var(--bg-white);
             display: grid;
-            grid-template-columns: 160px repeat(4, 1fr);
-            grid-auto-rows: minmax(50px, auto);
-            gap: 3px;
+            grid-template-columns: 120px repeat(4, 1fr); /* 1列目は少し狭く、残り4列を均等に */
+            grid-auto-rows: 1fr; /* 画面全体の高さに合わせて各マスが均等に伸び縮みする */
+            gap: 2px;
             border: 2px solid var(--border-line);
-            padding: 5px;
+            padding: 3px;
             overflow-y: auto;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
         }
 
+        /* 1つのマス（セル）の崩れを完全にリセット */
         .cell {
             background-color: var(--bg-white);
             color: var(--text-black);
             border: 1px solid #e0e0e0;
             display: flex;
-            align-items: center;
-            justify-content: center;
+            align-items: center;        /* 上下中央揃え */
+            justify-content: center;     /* 左右中央揃え */
             cursor: pointer;
-            font-size: 16px;
+            font-size: 14px;             /* 文字がはみ出さない適切なサイズ */
             font-weight: bold;
             text-align: center;
+            line-height: 1.2;            /* 縦伸びを防止する行間設定 */
+            padding: 2px;
+            white-space: normal;         /* 2行になっても綺麗に収める */
+            word-break: break-all;
         }
 
+        /* 署所名セル */
         .cell-station {
             background-color: #e8e8e8;
             cursor: default;
             border-right: 2px solid var(--border-line);
-            font-size: 18px;
+            font-size: 15px;
         }
 
+        /* 車両選択時 */
         .cell.active {
             background-color: var(--active-red);
             color: #ffffff;
@@ -73,10 +85,9 @@
 
         /* 下部：複合操作エリア */
         .lower-container {
-            flex-grow: 1;
+            height: 55%;
             display: flex;
-            gap: 10px;
-            height: 50%;
+            gap: 8px;
         }
 
         /* 地図表示エリア */
@@ -95,7 +106,7 @@
         .map-img {
             width: 100%;
             height: 100%;
-            object-fit: contain; /* 画像全体が見えるように */
+            object-fit: contain;
             background-color: #ccc;
         }
         
@@ -104,41 +115,41 @@
             bottom: 5px;
             left: 5px;
             background: rgba(255,255,255,0.9);
-            padding: 5px;
+            padding: 4px 8px;
             border: 1px solid #999;
             border-radius: 3px;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: bold;
             cursor: pointer;
         }
 
-        /* 操作パネル（設定項目） */
+        /* 操作パネル */
         .controls-panel {
             flex-grow: 1;
             background-color: var(--bg-white);
             border: 2px solid var(--border-line);
-            padding: 15px;
+            padding: 10px;
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             grid-template-rows: repeat(3, auto) 1fr;
-            gap: 15px;
+            gap: 10px;
         }
 
         .setting-item {
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 4px;
         }
 
         .label-text {
-            font-size: 16px;
+            font-size: 14px;
             font-weight: bold;
             color: #333;
         }
 
         select, input {
-            padding: 12px;
-            font-size: 18px;
+            padding: 10px;
+            font-size: 16px;
             font-weight: bold;
             border: 2px solid var(--border-line);
             background: white;
@@ -155,19 +166,19 @@
             grid-column: span 2;
             display: flex;
             align-items: flex-end;
-            justify-content: flex-end;
         }
 
+        /* 超巨大 出動決定ボタン */
         .btn-dispatch {
             background-color: var(--bg-white);
             color: black;
             border: 4px solid #666;
             width: 100%;
-            height: 100px;
-            font-size: 40px;
+            height: 80px;
+            font-size: 32px;
             font-weight: bold;
             cursor: pointer;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.15);
         }
 
         .btn-dispatch:active {
@@ -228,7 +239,7 @@
             </select>
         </div>
         <div class="setting-item wide">
-            <span class="label-text">自由入力詳細（状況など）</span>
+            <span class="label-text">自由入力詳細</span>
             <input type="text" id="freeText" placeholder="内容を入力">
         </div>
 
@@ -264,7 +275,6 @@
             cell.className = 'cell';
             cell.innerText = u;
             cell.onclick = () => {
-                // Apple/Android対策：タップされた瞬間に音声キューをクリアしてロックを外す
                 if (window.speechSynthesis) window.speechSynthesis.cancel();
                 cell.classList.toggle('active');
             };
@@ -276,14 +286,13 @@
             for(let i=0; i<fill; i++) {
                 const emptyCell = document.createElement('div');
                 emptyCell.className = 'cell';
-                emptyCell.style.backgroundColor = '#fbfbfb';
-                emptyCell.style.border = '1px dashed #ddd';
+                emptyCell.style.backgroundColor = '#fafafa';
+                emptyCell.style.border = '1px dashed #eee';
                 grid.appendChild(emptyCell);
             }
         }
     });
 
-    // 好きな地図画像を読み込む関数
     function loadCustomMap(input) {
         if (input.files && input.files[0]) {
             const reader = new FileReader();
@@ -294,7 +303,6 @@
         }
     }
 
-    // 全OS（Apple, Android, Windows, Mac）共通の音声出動処理
     function startDispatch() {
         const selectedElements = document.querySelectorAll('.cell.active');
         const selectedUnits = Array.from(selectedElements).map(el => el.innerText);
@@ -311,24 +319,16 @@
         const speechText = `${cmd}。${address}。${free}。出動部隊、${selectedUnits.join("、")}。以上。`;
 
         if ('speechSynthesis' in window) {
-            // 現在の音声を一度リセット
             window.speechSynthesis.cancel();
-
-            // 新しい音声を作成
             const uttr = new SpeechSynthesisUtterance(speechText);
-            
-            // Apple製品（iOS/macOS）およびAndroidの日本語標準声に対応させる設定
             uttr.lang = 'ja-JP';
-            uttr.rate = 1.2;  // 無線っぽい少し早い速度
-            uttr.pitch = 1.0;
+            uttr.rate = 1.25;
 
-            // スマホ系ブラウザ特有のバグ（途中で喋らなくなる問題）の対策として100ms遅らせて発動
             setTimeout(() => {
                 window.speechSynthesis.speak(uttr);
             }, 100);
         }
 
-        // 出動完了処理（消灯カラーに変更）
         selectedElements.forEach(el => {
             el.classList.remove('active');
             el.style.backgroundColor = 'var(--dispatched-gray)';

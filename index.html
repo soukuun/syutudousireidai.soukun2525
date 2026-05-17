@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>すくば市消防本部 指令台システム - 究極互換版</title>
+    <title>すくば市消防本部 指令台システム</title>
     <style>
         :root {
             --bg-white: #ffffff;
@@ -16,7 +16,7 @@
 
         * {
             box-sizing: border-box;
-            -webkit-box-sizing: border-box; /* 古いブラウザ用ガード */
+            -webkit-box-sizing: border-box;
             -moz-box-sizing: border-box;
         }
 
@@ -33,51 +33,57 @@
             overflow: hidden;
         }
 
-        /* 車両編成エリア：Windows Phoneの古いIE対策を盛り込んだグリッド */
+        /* 【大修正】すべてのマスを完全に同じ大きさに固定する5列の均等グリッド */
         .grid-container {
             height: 42%;
             background-color: var(--bg-white);
-            display: -ms-grid; /* Windows Phone / 古いIE用のおまじない */
+            display: -ms-grid;
             display: grid;
-            grid-template-columns: 120px repeat(4, 1fr);
-            grid-auto-rows: 1fr;
-            gap: 2px;
+            grid-template-columns: repeat(5, 1fr); /* 5列すべてを100%同じ幅に統一 */
+            grid-auto-rows: 1fr;                  /* 縦の高さもすべて均等に引き伸ばす */
+            gap: 3px;
             border: 2px solid var(--border-line);
-            padding: 3px;
+            padding: 4px;
             overflow-y: auto;
             margin-bottom: 8px;
         }
 
-        /* どんなクソ環境でも絶対に文字をど真ん中に固定する設定 */
+        /* どの車両もまったく同じ四角形になるように設定 */
         .cell {
             background-color: var(--bg-white);
             color: var(--text-black);
-            border: 1px solid #e0e0e0;
+            border: 1px solid #cccccc;
+            
+            /* 上下左右の完全中央揃え（古い環境ガード付き） */
             display: flex;
             align-items: center;
             justify-content: center;
-            text-align: center;
-            /* 古いスマホ用の縦横中央揃えガード */
             display: -webkit-flex;
             -webkit-align-items: center;
             -webkit-justify-content: center;
             
+            text-align: center;
             cursor: pointer;
-            font-size: 14px;
+            
+            /* 長い名前（並木第一救急隊 16など）でも絶対に潰れないサイズ調整 */
+            font-size: 13px; 
             font-weight: bold;
             line-height: 1.2;
-            padding: 2px;
+            padding: 4px;
             white-space: normal;
             word-break: break-all;
         }
 
+        /* 署所名のマス（中央署・並木分署も車両と同じ大きさに統一） */
         .cell-station {
-            background-color: #e8e8e8;
+            background-color: #e0e0e0;
+            color: #000000;
             cursor: default;
-            border-right: 2px solid var(--border-line);
-            font-size: 15px;
+            border: 1px solid #999999;
+            font-size: 14px;
         }
 
+        /* 出動選択時の赤点滅 */
         .cell.active {
             background-color: var(--active-red);
             color: #ffffff;
@@ -261,6 +267,7 @@
 </div>
 
 <script>
+    // 車両データ（13台）
     const data = [
         {
             station: "中央署",
@@ -273,12 +280,15 @@
     ];
 
     const grid = document.getElementById('grid');
+    
     data.forEach(group => {
+        // 署所名マス
         const sCell = document.createElement('div');
         sCell.className = 'cell cell-station';
         sCell.innerText = group.station;
         grid.appendChild(sCell);
         
+        // 各車両マス
         group.units.forEach(u => {
             const cell = document.createElement('div');
             cell.className = 'cell';
@@ -290,6 +300,7 @@
             grid.appendChild(cell);
         });
         
+        // 5列均等グリッドの隙間を埋めるためのダミーマス処理
         let fill = 5 - ((group.units.length + 1) % 5);
         if (fill < 5 && fill > 0) {
             for(let i=0; i<fill; i++) {
@@ -297,6 +308,7 @@
                 emptyCell.className = 'cell';
                 emptyCell.style.backgroundColor = '#fafafa';
                 emptyCell.style.border = '1px dashed #eee';
+                emptyCell.style.cursor = 'default';
                 grid.appendChild(emptyCell);
             }
         }
@@ -327,7 +339,6 @@
         const address = `すくば市、${town}、${block}${near}`;
         const speechText = `${cmd}。${address}。${free}。出動部隊、${selectedUnits.join("、")}。以上。`;
 
-        // どんな古いスマホでもブラウザが対応していれば音声リセットを掛ける
         if ('speechSynthesis' in window) {
             try {
                 window.speechSynthesis.cancel();
@@ -337,7 +348,6 @@
             uttr.lang = 'ja-JP';
             uttr.rate = 1.25;
 
-            // Windows PhoneのCortana（コルタナ）音声エンジンでもバグらないように設定
             setTimeout(() => {
                 window.speechSynthesis.speak(uttr);
             }, 120);
